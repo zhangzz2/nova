@@ -119,6 +119,7 @@ class Guest(object):
         try:
             # TODO(sahid): Host.write_instance_config should return
             # an instance of Guest
+            LOG.info("xml: %s", xml)
             domain = host.write_instance_config(xml)
         except Exception:
             with excutils.save_and_reraise_exception():

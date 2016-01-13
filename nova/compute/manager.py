@@ -679,6 +679,7 @@ class ComputeManager(manager.Manager):
         self.virtapi = ComputeVirtAPI(self)
         self.network_api = network.API()
         self.volume_api = volume.API()
+        LOG.info("volume_api: %s" % (self.volume_api))
         self.image_api = image.API()
         self._last_host_check = 0
         self._last_bw_usage_poll = 0
