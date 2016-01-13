@@ -519,15 +519,8 @@ class LibvirtDriver(driver.ComputeDriver):
 
     def _set_cache_mode(self, conf):
         """Set cache mode on LibvirtConfigGuestDisk object."""
-        try:
-            source_type = conf.source_type
-            driver_cache = conf.driver_cache
-        except AttributeError:
-            return
-
-        cache_mode = self.disk_cachemodes.get(source_type,
-                                              driver_cache)
-        conf.driver_cache = cache_mode
+        conf.driver_cache = 'none'
+        return
 
     def _do_quality_warnings(self):
         """Warn about untested driver configurations.
@@ -1092,8 +1085,10 @@ class LibvirtDriver(driver.ComputeDriver):
 
         disk_info = blockinfo.get_info_from_bdm(
             instance, CONF.libvirt.virt_type, image_meta, bdm)
+        LOG.info("disk info: %s", disk_info)
         self._connect_volume(connection_info, disk_info)
         conf = self._get_volume_config(connection_info, disk_info)
+        LOG.info("the conf : %s of disk info: %s", conf, disk_info)
         self._set_cache_mode(conf)
 
         try:
@@ -3248,6 +3243,8 @@ class LibvirtDriver(driver.ComputeDriver):
                                   disk_info,
                                   rescue, block_device_info,
                                   inst_type, os_type):
+        LOG.info("instance: %s, image_meta: %s, disk_info: %s, rescue: %s,  block_device_info: %s, inst_type: %s, os_type: %s", instance, image_meta, disk_info, rescue, block_device_info, inst_type, os_type)
+
         devices = []
         disk_mapping = disk_info['mapping']
 
@@ -3255,17 +3252,20 @@ class LibvirtDriver(driver.ComputeDriver):
             block_device_info)
         mount_rootfs = CONF.libvirt.virt_type == "lxc"
         if mount_rootfs:
+            LOG.info("rootfs")
             fs = vconfig.LibvirtConfigGuestFilesys()
             fs.source_type = "mount"
             fs.source_dir = os.path.join(
                 libvirt_utils.get_instance_path(instance), 'rootfs')
             devices.append(fs)
         elif os_type == vm_mode.EXE and CONF.libvirt.virt_type == "parallels":
+            LOG.info("exe")
             if 'disk' in disk_mapping:
                 fs = self._get_guest_fs_config(instance, "disk")
                 devices.append(fs)
         else:
 
+            LOG.info("disk_mapping: %s", disk_mapping)
             if rescue:
                 diskrescue = self._get_guest_disk_config(instance,
                                                          'disk.rescue',
@@ -3319,18 +3319,35 @@ class LibvirtDriver(driver.ComputeDriver):
                     self._get_disk_config_image_type())
                 devices.append(diskconfig)
 
+        i = 0
         for vol in block_device.get_bdms_to_connect(block_device_mapping,
                                                    mount_rootfs):
+            LOG.info("vol %s", vol)
+
             connection_info = vol['connection_info']
             vol_dev = block_device.prepend_dev(vol['mount_device'])
+            LOG.info("vol_dev %s, connection_info: %s", vol_dev, connection_info)
+
             info = disk_mapping[vol_dev]
+            LOG.info("info %s", info)
+
             self._connect_volume(connection_info, info)
+            LOG.info("info %s, connection_info: %s", info, connection_info)
+
             cfg = self._get_volume_config(connection_info, info)
+            LOG.info("info %s, connection_info: %s, cfg: %s", info, connection_info, cfg)
+
+            cfg.alias_name = "virtio-disk%s" % (i)
+            i = i + 1
+
             devices.append(cfg)
+            LOG.info("devices: %s", devices)
+
             vol['connection_info'] = connection_info
             vol.save()
 
         for d in devices:
+            LOG.info("set cache %s", d)
             self._set_cache_mode(d)
 
         if image_meta.properties.get('hw_scsi_model'):
@@ -4184,6 +4201,7 @@ class LibvirtDriver(driver.ComputeDriver):
                 instance, image_meta, disk_info, rescue, block_device_info,
                 flavor, guest.os_type)
         for config in storage_configs:
+            LOG.info("need add device, config: %s", config)
             guest.add_device(config)
 
         for vif in network_info:

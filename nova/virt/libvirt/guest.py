@@ -119,7 +119,8 @@ class Guest(object):
         try:
             # TODO(sahid): Host.write_instance_config should return
             # an instance of Guest
-            LOG.info("xml: %s", xml)
+            LOG.info("xml:")
+            LOG.info(xml)
             domain = host.write_instance_config(xml)
         except Exception:
             with excutils.save_and_reraise_exception():
@@ -229,6 +230,7 @@ class Guest(object):
         :param live: A bool to indicate whether it affect the guest
                      in running state
         """
+        LOG.info("attach device : conf: %s, persistent: %s, live: %s", conf, persistent, live)
         flags = persistent and libvirt.VIR_DOMAIN_AFFECT_CONFIG or 0
         flags |= live and libvirt.VIR_DOMAIN_AFFECT_LIVE or 0
         self._domain.attachDeviceFlags(conf.to_xml(), flags=flags)

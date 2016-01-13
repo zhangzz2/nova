@@ -64,44 +64,12 @@ class LibvirtNetVolumeDriver(libvirt_volume.LibvirtBaseVolumeDriver):
         conf = super(LibvirtNetVolumeDriver,
                      self).get_config(connection_info, disk_info)
 
+        #volume/volume.py
         netdisk_properties = connection_info['data']
         conf.source_type = "network"
-        conf.source_protocol = connection_info['driver_volume_type']
-        conf.source_name = netdisk_properties.get('name')
-        conf.source_hosts = netdisk_properties.get('hosts', [])
-        conf.source_ports = netdisk_properties.get('ports', [])
-        auth_enabled = netdisk_properties.get('auth_enabled')
-        if (conf.source_protocol == 'rbd' and
-                CONF.libvirt.rbd_secret_uuid):
-            conf.auth_secret_uuid = CONF.libvirt.rbd_secret_uuid
-            auth_enabled = True  # Force authentication locally
-            if CONF.libvirt.rbd_user:
-                conf.auth_username = CONF.libvirt.rbd_user
-        if conf.source_protocol == 'iscsi':
-            try:
-                conf.source_name = ("%(target_iqn)s/%(target_lun)s" %
-                                    netdisk_properties)
-                target_portal = netdisk_properties['target_portal']
-            except KeyError:
-                raise exception.NovaException(_("Invalid volume source data"))
+        conf.source_protocol = "lichbd"
+        conf.source_name = "volume/%s" % (connection_info["data"]["volume_id"])
 
-            ip, port = utils.parse_server_string(target_portal)
-            if ip == '' or port == '':
-                raise exception.NovaException(_("Invalid target_lun"))
-            conf.source_hosts = [ip]
-            conf.source_ports = [port]
-            if netdisk_properties.get('auth_method') == 'CHAP':
-                auth_enabled = True
-                conf.auth_secret_type = 'iscsi'
-                password = netdisk_properties.get('auth_password')
-                conf.auth_secret_uuid = self._get_secret_uuid(conf, password)
-        if auth_enabled:
-            conf.auth_username = (conf.auth_username or
-                                  netdisk_properties['auth_username'])
-            conf.auth_secret_type = (conf.auth_secret_type or
-                                     netdisk_properties['secret_type'])
-            conf.auth_secret_uuid = (conf.auth_secret_uuid or
-                                     netdisk_properties['secret_uuid'])
         return conf
 
     def disconnect_volume(self, connection_info, disk_dev):
