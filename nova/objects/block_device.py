@@ -214,13 +214,12 @@ class BlockDeviceMapping(base.NovaPersistentObject, base.NovaObject,
             raise exception.VolumeBDMNotFound(volume_id=volume_id)
         # NOTE (ndipanov): Move this to the db layer into a
         # get_by_instance_and_volume_id method
-        LOG.info("volume_id: %s, instance_uuid: %s, bdm['instance_uuid']", volume_id, instance_uuid, db_bdm['instance_uuid'])
-        LOG.warn("volume_id: %s, instance_uuid: %s, bdm['instance_uuid']", volume_id, instance_uuid, db_bdm['instance_uuid'])
-        time.sleep(3)
+        LOG.info("get_by_vlome_id ,volume_id: %s, instance_uuid: %s, bdm['instance_uuid']: %s", volume_id, instance_uuid, db_bdm['instance_uuid'])
+        msg = "volume_id: %s, instance_uuid: %s, bdm['instance_uuid']: %s" % ( volume_id, instance_uuid, db_bdm['instance_uuid'])
         if instance_uuid and instance_uuid != db_bdm['instance_uuid']:
             raise exception.InvalidVolume(
                     reason=_("Volume does not belong to the "
-                             "requested instance."))
+                             "requested instance. %s" %(msg)))
         return cls._from_db_object(context, cls(), db_bdm,
                                    expected_attrs=expected_attrs)
 

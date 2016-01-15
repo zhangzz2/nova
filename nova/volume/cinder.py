@@ -284,6 +284,7 @@ class API(object):
 
     def check_attach(self, context, volume, instance=None):
         # TODO(vish): abstract status checking?
+        return
         if volume['status'] != "available":
             msg = _("volume '%(vol)s' status must be 'available'. Currently "
                     "in '%(status)s'") % {'vol': volume['id'],

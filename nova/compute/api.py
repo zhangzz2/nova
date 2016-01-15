@@ -3070,10 +3070,14 @@ class API(base.Base):
             context, instance, device, volume_id, disk_bus=disk_bus,
             device_type=device_type)
         try:
+            LOG.info("attach volume %s to %s", volume_id, instance.display_name)
             volume = self.volume_api.get(context, volume_id)
             self.volume_api.check_attach(context, volume, instance=instance)
+            LOG.info("attach reserve_volume %s to %s", volume_id, instance.display_name)
             self.volume_api.reserve_volume(context, volume_id)
+            LOG.info("compute_rpcapi attach volume %s to %s", volume_id, instance.display_name)
             self.compute_rpcapi.attach_volume(context, instance, volume_bdm)
+            LOG.info("attach volume %s to %s ok", volume_id, instance.display_name)
         except Exception:
             with excutils.save_and_reraise_exception():
                 volume_bdm.destroy()
@@ -3120,8 +3124,13 @@ class API(base.Base):
             raise exception.InvalidVolume(reason=msg)
         # The caller likely got the instance from volume['instance_uuid']
         # in the first place, but let's sanity check.
-        if volume['instance_uuid'] != instance.uuid:
-            raise exception.VolumeUnattached(volume_id=volume['id'])
+        LOG.info("detach_volume volume: %s of instance: %d, but get volume[instance_uuid]: %s", volume["id"], instance.uuid, volume["instance_uuid"])
+        LOG.info("volume %s", volume)
+        LOG.info("detach_volume skip check instance_uuid, because multi attachment")
+        #skip check instance_uuid, because multi attachment
+        #if volume['instance_uuid'] != instance.uuid:
+            #raise exception.VolumeUnattached(volume_id=volume['id'])
+
         self._detach_volume(context, instance, volume)
 
     @wrap_check_policy

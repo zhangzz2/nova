@@ -16,6 +16,7 @@
 """The volumes extension."""
 
 from oslo_utils import strutils
+from oslo_log import log as logging
 from webob import exc
 
 from nova.api.openstack import common
@@ -33,6 +34,7 @@ ALIAS = "os-volumes"
 authorize = extensions.os_compute_authorizer(ALIAS)
 authorize_attach = extensions.os_compute_authorizer('os-volumes-attachments')
 
+LOG = logging.getLogger(__name__)
 
 def _translate_volume_detail_view(context, vol):
     """Maps keys for volumes details view."""
@@ -383,9 +385,11 @@ class VolumeAttachmentController(wsgi.Controller):
             msg = _("Instance %s is not attached.") % server_id
             raise exc.HTTPNotFound(explanation=msg)
 
+        LOG.info("delete, volume_id: %s", volume_id)
         found = False
         try:
             for bdm in bdms:
+                LOG.info("bdm: volmue_id: %s, instance_uuid: %s, device_name: %s, connection_info: %s", bdm.volume_id, bdm.instance_uuid, bdm.device_name, bdm.connection_info)
                 if bdm.volume_id != volume_id:
                     continue
                 if bdm.is_root:
@@ -398,6 +402,8 @@ class VolumeAttachmentController(wsgi.Controller):
                 except exception.VolumeUnattached:
                     # The volume is not attached.  Treat it as NotFound
                     # by falling through.
+                    LOG.info("fuck: volume_id: %s, instance: %s", volume_id, instance)
+                    raise
                     pass
                 except exception.InvalidVolume as e:
                     raise exc.HTTPBadRequest(explanation=e.format_message())
