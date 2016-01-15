@@ -237,31 +237,9 @@ class RBDDriver(object):
         utils.execute('rbd', 'import', *args)
 
     def cleanup_volumes(self, instance):
-        def _cleanup_vol(ioctx, volume, retryctx):
-            LOG.info(_LW('rbd remove %(volume)s in pool %(pool)s '
-                ''),
-                {'volume': volume, 'pool': self.pool})
-            #todo
-
-        with RADOSClient(self, self.pool) as client:
-
-            def belongs_to_instance(disk):
-                return disk.startswith(instance.uuid)
-
-            volumes = rbd.RBD().list(client.ioctx)
-            for volume in filter(belongs_to_instance, volumes):
-                # NOTE(danms): We let it go for ten seconds
-                retryctx = {'retries': 10}
-                timer = loopingcall.FixedIntervalLoopingCall(
-                    _cleanup_vol, client.ioctx, volume, retryctx)
-                timed_out = timer.start(interval=1).wait()
-                if timed_out:
-                    # NOTE(danms): Run this again to propagate the error, but
-                    # if it succeeds, don't raise the loopingcall exception
-                    try:
-                        _cleanup_vol(client.ioctx, volume, retryctx)
-                    except loopingcall.LoopingCallDone:
-                        pass
+        LOG.info(_LW('rbd remove volume in pool %(pool)s '
+                ''), {'pool': self.pool})
+        #todo
 
     def get_pool_info(self):
         stats = {"kb": 1024*1024*1024*1024*2, "kb_avail": 1024*1024*1024*1024, "kb_used": 1000000}

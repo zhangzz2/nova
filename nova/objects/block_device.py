@@ -12,6 +12,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import time
 from oslo_log import log as logging
 
 from nova import block_device
@@ -208,11 +209,14 @@ class BlockDeviceMapping(base.NovaPersistentObject, base.NovaObject,
         if expected_attrs is None:
             expected_attrs = []
         db_bdm = db.block_device_mapping_get_by_volume_id(
-                context, volume_id, _expected_cols(expected_attrs))
+                context, volume_id, instance_uuid,  _expected_cols(expected_attrs))
         if not db_bdm:
             raise exception.VolumeBDMNotFound(volume_id=volume_id)
         # NOTE (ndipanov): Move this to the db layer into a
         # get_by_instance_and_volume_id method
+        LOG.info("volume_id: %s, instance_uuid: %s, bdm['instance_uuid']", volume_id, instance_uuid, db_bdm['instance_uuid'])
+        LOG.warn("volume_id: %s, instance_uuid: %s, bdm['instance_uuid']", volume_id, instance_uuid, db_bdm['instance_uuid'])
+        time.sleep(3)
         if instance_uuid and instance_uuid != db_bdm['instance_uuid']:
             raise exception.InvalidVolume(
                     reason=_("Volume does not belong to the "

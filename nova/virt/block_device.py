@@ -270,7 +270,9 @@ class DriverVolumeBlockDevice(DriverBlockDevice):
         mode = 'rw'
         if 'data' in connection_info:
             mode = connection_info['data'].get('access_mode', 'rw')
-        if volume['attach_status'] == "detached":
+        LOG.info("aways attach, skip volume status: %s", volume["attach_status"])
+        #if volume['attach_status'] == "detached":
+        if True:
             # NOTE(mriedem): save our current state so connection_info is in
             # the database before the volume status goes to 'in-use' because
             # after that we can detach and connection_info is required for

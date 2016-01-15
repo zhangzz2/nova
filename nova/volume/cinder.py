@@ -328,12 +328,13 @@ class API(object):
 
     @translate_volume_exception
     def attach(self, context, volume_id, instance_uuid, mountpoint, mode='rw'):
+        LOG.info("attach volume: %s to %s", volume_id, instance_uuid)
         cinderclient(context).volumes.attach(volume_id, instance_uuid,
                                              mountpoint, mode=mode)
 
     @translate_volume_exception
-    def detach(self, context, volume_id):
-        cinderclient(context).volumes.detach(volume_id)
+    def detach(self, context, volume_id, attachment_uuid=None):
+        cinderclient(context).volumes.detach(volume_id, attachment_uuid)
 
     @translate_volume_exception
     def initialize_connection(self, context, volume_id, connector):

@@ -1199,12 +1199,11 @@ def block_device_mapping_get_all_by_instance(context, instance_uuid,
                                                          use_slave)
 
 
-def block_device_mapping_get_by_volume_id(context, volume_id,
+def block_device_mapping_get_by_volume_id(context, volume_id, instance_uuid=None,
         columns_to_join=None):
     """Get block device mapping for a given volume."""
-    return IMPL.block_device_mapping_get_by_volume_id(context, volume_id,
+    return IMPL.block_device_mapping_get_by_volume_id(context, volume_id, instance_uuid,
             columns_to_join)
-
 
 def block_device_mapping_destroy(context, bdm_id):
     """Destroy the block device mapping."""

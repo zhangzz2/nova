@@ -4604,10 +4604,13 @@ class ComputeManager(manager.Manager):
             try:
                 return self._attach_volume(context, instance, driver_bdm)
             except Exception:
+                LOG.info("attach volume error")
                 with excutils.save_and_reraise_exception():
                     bdm.destroy()
 
+        LOG.info("do attach volume")
         do_attach_volume(context, instance, driver_bdm)
+        LOG.info("do attach volume after")
 
     def _attach_volume(self, context, instance, bdm):
         context = context.elevated()
@@ -4636,9 +4639,8 @@ class ComputeManager(manager.Manager):
         mp = bdm.device_name
         volume_id = bdm.volume_id
 
-        LOG.info(_LI('Detach volume %(volume_id)s from mountpoint %(mp)s'),
-                  {'volume_id': volume_id, 'mp': mp},
-                  context=context, instance=instance)
+        LOG.info("bdm: %s", bdm)
+        LOG.info('Detach volume %s from mountpoint %s', volume_id, mp)
 
         connection_info = jsonutils.loads(bdm.connection_info)
         # NOTE(vish): We currently don't use the serial when disconnecting,
@@ -4681,9 +4683,9 @@ class ComputeManager(manager.Manager):
                             like rebuild, when we don't want to destroy BDM
 
         """
-
         bdm = objects.BlockDeviceMapping.get_by_volume_id(
-                context, volume_id)
+                context, volume_id, instance.uuid)
+
         if CONF.volume_usage_poll_interval > 0:
             vol_stats = []
             mp = bdm.device_name
@@ -4723,7 +4725,9 @@ class ComputeManager(manager.Manager):
         info = dict(volume_id=volume_id)
         self._notify_about_instance_usage(
             context, instance, "volume.detach", extra_usage_info=info)
-        self.volume_api.detach(context.elevated(), volume_id)
+
+        attachment_uuid = bdm.id
+        self.volume_api.detach(context.elevated(), volume_id, attachment_uuid)
 
     @wrap_exception()
     @wrap_instance_fault
