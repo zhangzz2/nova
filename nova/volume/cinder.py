@@ -288,8 +288,11 @@ class API(object):
         #assert(instance is not None)
         bdms = None
         if instance is not None:
-            bdms = objects.BlockDeviceMapping.get_by_volume_id(
+            try:
+                bdms = objects.BlockDeviceMapping.get_by_volume_id(
                     context, volume["id"], instance.uuid)
+            except exception.VolumeBDMNotFound:
+                pass
 
         if bdms:
             msg = "voluem %s was mount by %s" % (volume["id"], instance.uuid)
