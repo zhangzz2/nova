@@ -35,6 +35,7 @@ from nova import availability_zones as az
 from nova import exception
 from nova.i18n import _
 from nova.i18n import _LW
+from nova import objects
 
 cinder_opts = [
     cfg.StrOpt('catalog_info',
@@ -284,7 +285,19 @@ class API(object):
 
     def check_attach(self, context, volume, instance=None):
         # TODO(vish): abstract status checking?
+        #assert(instance is not None)
+        bdms = None
+        if instance is not None:
+            bdms = objects.BlockDeviceMapping.get_by_volume_id(
+                    context, volume["id"], instance.uuid)
+
+        if bdms:
+            msg = "voluem %s was mount by %s" % (volume["id"], instance.uuid)
+            raise exception.InvalidVolume(reason=msg)
+
+        LOG.info("volume %s not use with give instacne(?). check_attach pass", volume["id"])
         return
+
         if volume['status'] != "available":
             msg = _("volume '%(vol)s' status must be 'available'. Currently "
                     "in '%(status)s'") % {'vol': volume['id'],
