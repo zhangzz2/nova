@@ -402,8 +402,8 @@ class VolumeAttachmentController(wsgi.Controller):
                 except exception.VolumeUnattached:
                     # The volume is not attached.  Treat it as NotFound
                     # by falling through.
-                    LOG.info("fuck: volume_id: %s, instance: %s", volume_id, instance)
-                    raise
+                    LOG.warn("fuck: volume_id: %s, instance: %s", volume_id, instance)
+                    #raise
                     pass
                 except exception.InvalidVolume as e:
                     raise exc.HTTPBadRequest(explanation=e.format_message())

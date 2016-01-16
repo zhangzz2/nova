@@ -57,6 +57,7 @@ from oslo_utils import timeutils
 from oslo_utils import units
 import six
 from six.moves import range
+import xml.etree.ElementTree as etree_zz2
 
 from nova.api.metadata import base as instance_metadata
 from nova import block_device
@@ -425,6 +426,12 @@ MIN_QEMU_S390_VERSION = (2, 3, 0)
 
 # Names of the types that do not get compressed during migration
 NO_COMPRESSION_TYPES = ('qcow2',)
+
+def e(parent, tag, value=None, attrib={}):
+    el = etree_zz2.SubElement(parent, tag, attrib)
+    if value:
+        el.text = value
+    return el
 
 
 class LibvirtDriver(driver.ComputeDriver):
@@ -4338,15 +4345,53 @@ class LibvirtDriver(driver.ComputeDriver):
                 'block_device_info': block_device_info})
         # NOTE(mriedem): block_device_info can contain auth_password so we
         # need to sanitize the password in the message.
-        LOG.debug(strutils.mask_password(msg), instance=instance)
+        #LOG.info(strutils.mask_password(msg), instance=instance)
+        #LOG.info(msg)
+        LOG.info("disk_info: %s, disk_info_type: %s", disk_info, type(disk_info))
+        LOG.info("block_device_info: %s, block_device_info: %s", block_device_info, type(block_device_info))
+
         conf = self._get_guest_config(instance, network_info, image_meta,
                                       disk_info, rescue, block_device_info,
                                       context)
         xml = conf.to_xml()
 
+
+        #add commandline
+        #commandline = "<qemu:commandline>\n"
+        #for i in range(len(block_device_info["block_device_mapping"])):
+            #commandline = commandline +  "<qemu:arg value='-set'/>\n"
+            #commandline = commandline +  "<qemu:arg value='device.virtio-disk%s.scsi=off'/>\n" % (i)
+            #commandline = commandline +  "<qemu:arg value='-set'/>\n"
+            #commandline = commandline +  "<qemu:arg value='device.virtio-disk%s.config-wce=off'/>\n" % (i)
+            #commandline = commandline +  "<qemu:arg value='-set'/>\n"
+            #commandline = commandline +  "<qemu:arg value='device.virtio-disk%s.x-data-plane=on'/>\n" % (i)
+        #commandline = commandline + "</qemu:commandline>\n"
+
+        #xml = xml.replace("</domain>", commandline + "</domain>")
+
+        root = etree_zz2.fromstring(xml)
+        root.set('xmlns:qemu',"http://libvirt.org/schemas/domain/qemu/1.0")
+        #root.set('xmlns:ns0',"http://openstack.org/xmlns/libvirt/nova/1.0")
+        commandline = e(root, 'qemu:commandline')
+        for i in range(len(block_device_info["block_device_mapping"])):
+            id = i
+            e(commandline, 'qemu:arg', None, {'value': '-set'})
+            e(commandline, 'qemu:arg', None, {'value': 'device.virtio-disk%d.scsi=off' % (id)})
+
+            e(commandline, 'qemu:arg', None, {'value': '-set'})
+            e(commandline, 'qemu:arg', None, {'value': 'device.virtio-disk%d.config-wce=off' % (id)})
+
+            e(commandline, 'qemu:arg', None, {'value': '-set'})
+            e(commandline, 'qemu:arg', None, {'value': 'device.virtio-disk%d.x-data-plane=on' %(id)})
+
+        xml = etree_zz2.tostring(root)
+        LOG.info("after add commandline xml: %s", xml)
+
+        write_to_disk = True
         if write_to_disk:
             instance_dir = libvirt_utils.get_instance_path(instance)
             xml_path = os.path.join(instance_dir, 'libvirt.xml')
+            LOG.info("write xml to %s", xml_path)
             libvirt_utils.write_to_file(xml_path, xml)
 
         LOG.debug('End _get_guest_xml xml=%(xml)s',
@@ -6471,7 +6516,7 @@ class LibvirtDriver(driver.ComputeDriver):
             volume_devices.add(disk_dev)
 
         disk_info = []
-        doc = etree.fromstring(xml)
+        doc = etree_zz2.fromstring(xml)
         disk_nodes = doc.findall('.//devices/disk')
         path_nodes = doc.findall('.//devices/disk/source')
         driver_nodes = doc.findall('.//devices/disk/driver')
