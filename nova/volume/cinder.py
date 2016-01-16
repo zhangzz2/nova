@@ -286,17 +286,22 @@ class API(object):
     def check_attach(self, context, volume, instance=None):
         # TODO(vish): abstract status checking?
         #assert(instance is not None)
-        bdms = None
+        bdm = None
         if instance is not None:
             try:
-                bdms = objects.BlockDeviceMapping.get_by_volume_id(
+                bdm = objects.BlockDeviceMapping.get_by_volume_id(
                     context, volume["id"], instance.uuid)
             except exception.VolumeBDMNotFound:
+                LOG.warn("volume bdm not found: volume: %s, instance_uuid: %s", volume["id"], instance.uuid)
                 pass
 
-        if bdms:
-            msg = "voluem %s was mount by %s" % (volume["id"], instance.uuid)
-            raise exception.InvalidVolume(reason=msg)
+        if bdm:
+            if bdm["connection_info"] is None:
+                msg = "fuck, skip. voluem %s was mount by %s, but connection_info was none, so skip. bdm: %s" % (volume["id"], instance.uuid, bdm)
+                LOG.warn(msg)
+            else:
+                msg = "voluem %s was mount by %s, bdm: %s" % (volume["id"], instance.uuid, bdm)
+                raise exception.InvalidVolume(reason=msg)
 
         LOG.info("volume %s not use with give instacne(?). check_attach pass", volume["id"])
         return
